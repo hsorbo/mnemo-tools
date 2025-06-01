@@ -2,7 +2,7 @@
 
 char CMD_GETDATA [1] = {0x43};
 
-mnemo* mnemo_open(char *tty, enum mnemo_version version, speed_t speed) {
+mnemo* mnemo_open(const char *tty, enum mnemo_version version, speed_t speed) {
     int fd = open(tty, O_RDWR | O_NOCTTY | O_NDELAY);
     if (fd < 0) {
         return NULL;

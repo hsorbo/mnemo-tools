@@ -21,7 +21,7 @@ typedef struct {
     struct pollfd pfd;
 } mnemo;
 
-mnemo *mnemo_open(char *tty, enum mnemo_version version, speed_t speed);
+mnemo *mnemo_open(const char *tty, enum mnemo_version version, speed_t speed);
 void mnemo_close(mnemo *device);
 void mnemo_getdata(mnemo *dev, void (*ondata)(char*, int, void*), void* userdata);
 #endif
