@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    mnemo *m = mnemo_open(tty, v2 ? MNEMO_VERSION_2 : MNEMO_VERSION_1);
+    mnemo *m = mnemo_open(tty, v2 ? MNEMO_VERSION_2 : MNEMO_VERSION_1, B9600);
     if(m == NULL) {
         perror(tty);
         return -1;

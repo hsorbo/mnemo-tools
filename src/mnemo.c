@@ -2,7 +2,7 @@
 
 char CMD_GETDATA [1] = {0x43};
 
-mnemo* mnemo_open(char *tty, enum mnemo_version version) {
+mnemo* mnemo_open(char *tty, enum mnemo_version version, speed_t speed) {
     int fd = open(tty, O_RDWR | O_NOCTTY | O_NDELAY);
     if (fd < 0) {
         return NULL;
@@ -15,9 +15,14 @@ mnemo* mnemo_open(char *tty, enum mnemo_version version) {
     struct termios settings;
     bzero(&settings, sizeof(settings));
     settings.c_cflag = CS8 | CLOCAL | CREAD;
-    cfsetspeed(&settings, (speed_t)B9600);
+    cfsetspeed(&settings, speed);
     tcflush(device->fd, TCIFLUSH);
     tcsetattr(device->fd, TCSANOW, &settings);
+    
+    device->pfd.fd = fd;
+    device->pfd.events = POLLIN;
+    device->pfd.revents = 0;
+
     return device;
 }
 
