@@ -118,8 +118,8 @@ static int read_bytes(mnemo *dev, uint8_t * response, size_t count, int timeout)
 }
 
 
-static size_t bl_create_command(
-    uint8_t * data, 
+static ssize_t bl_write_command(
+    mnemo *dev, 
     uint8_t cmd, 
     bool is_write,
     uint16_t size, 
@@ -136,19 +136,16 @@ static size_t bl_create_command(
         (addr & 0xff0000) >> 16,
         0x00
     };
-    memcpy(data, x, sizeof(x));
-    return sizeof(x);
+    return write(dev->fd, x, sizeof(x));
 }
 
 
 int bl_version(mnemo *dev, BLInfo *info) {
-    if (dev == NULL) {
+    size_t size = bl_write_command(dev, BL_CMD_GETVER, false, 0x00, 0x00);
+    if (size <= 0) {
         return -2;
     }
-    uint8_t cmd [100];
     uint8_t response [100];
-    size_t size = bl_create_command(cmd, BL_CMD_GETVER, false, 0x00, 0x00);
-    write(dev->fd, cmd, size);
     int n = read_bytes(dev, response, (size_t)26, 1000);
     if (n < 0) {
         return n;
@@ -167,13 +164,11 @@ int bl_version(mnemo *dev, BLInfo *info) {
 }
 
 int bl_flash_read(mnemo *dev, uint32_t addr, uint8_t * data, uint16_t len) {
-    if (dev == NULL) {
+    size_t size = bl_write_command(dev, BL_CMD_FLSH_READ, false, len, addr);
+    if (size <= 0) {
         return -2;
     }
-    uint8_t cmd [100];
     uint8_t response [100];
-    size_t size = bl_create_command(cmd, BL_CMD_FLSH_READ, false, len, addr);
-    write(dev->fd, cmd, size);
     int n = read_bytes(dev, response, size+(size_t)len, 1000);
     if (n < 0) {
         return n;
@@ -182,14 +177,12 @@ int bl_flash_read(mnemo *dev, uint32_t addr, uint8_t * data, uint16_t len) {
 }
 
 int bl_flash_write(mnemo *dev, uint32_t addr, uint8_t * data, uint16_t len) {
-    if (dev == NULL) {
+    size_t size = bl_write_command(dev, BL_CMD_FLSH_WRITE, true, len, addr);
+    if (size <= 0) {
         return -2;
     }
-    uint8_t cmd [100];
-    uint8_t response [100];
-    size_t size = bl_create_command(cmd, BL_CMD_FLSH_WRITE, true, len, addr);
-    write(dev->fd, cmd, size);
     write(dev->fd, data, len);
+    uint8_t response [100];
     int n = read_bytes(dev, response, size+1, 1000);
     if (n < 0) {
         return n;
@@ -202,10 +195,11 @@ int bl_flash_write(mnemo *dev, uint32_t addr, uint8_t * data, uint16_t len) {
 
 
 int bl_flash_erase(mnemo *dev, uint32_t addr, uint16_t len) {
-    uint8_t cmd [100];
+    size_t size = bl_write_command(dev, BL_CMD_FLSH_ERASE, true, len, addr);
+    if (size <= 0) {
+        return -2;
+    }
     uint8_t response [100];
-    size_t size = bl_create_command(cmd, BL_CMD_FLSH_ERASE, true, len, addr);
-    write(dev->fd, cmd, size);
     int n = read_bytes(dev, response, size+1, 5000);
     if (n < 0) {
         return n;
@@ -217,10 +211,11 @@ int bl_flash_erase(mnemo *dev, uint32_t addr, uint16_t len) {
 }
 
 int bl_checksum(mnemo *dev, uint32_t addr, uint16_t len) {
-    uint8_t cmd [100];
+    size_t size = bl_write_command(dev, BL_CMD_CHKSUM, false, len, addr);
+    if (size <= 0) {
+        return -2;
+    }
     uint8_t response [100];
-    size_t size = bl_create_command(cmd, BL_CMD_CHKSUM, false, len, addr);
-    write(dev->fd, cmd, size);
     int n = read_bytes(dev, response, size+2, 1000);
     if (n < 0) {
         return n;
@@ -230,10 +225,10 @@ int bl_checksum(mnemo *dev, uint32_t addr, uint16_t len) {
 }
 
 int bl_reset(mnemo *dev) {
-    uint8_t cmd [100];
-    uint8_t response [100];
-    size_t size = bl_create_command(cmd, BL_CMD_RESET, false, 0, 0);    
-    write(dev->fd, cmd, size);
+    size_t size = bl_write_command(dev, BL_CMD_RESET, false, 0, 0);    
+    if (size <= 0) {
+        return -2;
+    }
     // Doesnt seem to respond before rebooting
     return 0;
 }
