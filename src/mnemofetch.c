@@ -18,7 +18,12 @@ void ondata(char *buf, int n, void *userdata){
     ctx->imported_bytes += n;
     printf("\r\033[KRead: %d bytes", n);
     for (int i = 0; i < n; i++) {
-        dprintf(ctx->fd, "%d;", buf[i]);
+        if(ctx->raw) {
+            dprintf(ctx->fd, "%c", buf[i]);
+        }
+        else {
+            dprintf(ctx->fd, "%d;", buf[i]);
+        }
     }
 }
 
