@@ -38,7 +38,7 @@ void usage_import(const char *progname) {
         "\n"
         "Options:\n"
         "  --format raw|dmp   Output format (default: dmp)\n"
-        "  --v2               Use protocol version 2\n",
+        "  --v2               Mnemo2\n",
         progname);
     exit(1);
 }
