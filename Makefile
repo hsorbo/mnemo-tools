@@ -1,2 +1,0 @@
-all: src/mnemofetch.c
-	cc -O3 -o mnemo src/mnemofetch.c src/mnemo.c src/hexfile.c

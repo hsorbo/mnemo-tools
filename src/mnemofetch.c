@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include "hexfile.h"
+#include "autodetect.h"
 
 #define PROGRAM_VERSION "0.1"
 
@@ -30,22 +31,22 @@ void ondata(char *buf, int n, void *userdata){
 void usage_import(const char *progname) {
     fprintf(stderr,
         "Usage:\n"
-        "  %s import [--raw] [--v2] <tty> <file.dmp>\n", progname);
+        "  %s import [--raw] [--v2] [<tty>] <file.dmp>\n", progname);
     exit(1);
 }
 
 void usage_fwupdate(const char *progname) {
     fprintf(stderr,
         "Usage:\n"
-        "  %s fwupdate [--baud <rate>] <tty> <file.hex>\n", progname);
+        "  %s fwupdate [--baud <rate>] [<tty>] <file.hex>\n", progname);
     exit(1);
 }
 
 void usage(const char *progname) {
     fprintf(stderr,
         "Usage:\n"
-        "  %s import   [--raw] [--v2] <tty> <file.dmp>\n"
-        "  %s fwupdate [--baud <rate>] <tty> <file.hex>\n"
+        "  %s import   [--raw] [--v2] [<tty>] <file.dmp>\n"
+        "  %s fwupdate [--baud <rate>] [<tty>] <file.hex>\n"
         "  %s --version\n"
         "  %s --help\n",
         progname, progname, progname, progname);
@@ -162,12 +163,22 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        if (optind + 2 != argc) {
+        const char *tty = NULL;
+        const char *file = NULL;
+
+        if (optind + 1 == argc) {
+            file = argv[optind];
+            tty = autodetect();
+            if (!tty) {
+                fprintf(stderr, "No TTY specified and autodetect failed\n");
+                return 1;
+            }
+        } else if (optind + 2 == argc) {
+            tty = argv[optind];
+            file = argv[optind + 1];
+        } else {
             usage_import(progname);
         }
-
-        const char *tty = argv[optind];
-        const char *file = argv[optind + 1];
 
         int out = open(file, O_CREAT | O_WRONLY | O_TRUNC, 0666);
         if(out < 0) {
@@ -218,12 +229,22 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        if (optind + 2 != argc) {
+        const char *tty = NULL;
+        const char *file = NULL;
+
+        if (optind + 1 == argc) {
+            file = argv[optind];
+            tty = autodetect();
+            if (!tty) {
+                fprintf(stderr, "No TTY specified and autodetect failed\n");
+                return 1;
+            }
+        } else if (optind + 2 == argc) {
+            tty = argv[optind];
+            file = argv[optind + 1];
+        } else {
             usage_fwupdate(progname);
         }
-
-        const char *tty = argv[optind];
-        const char *file = argv[optind + 1];
 
         if (!strstr(file, ".hex")) {
             fprintf(stderr, "Warning: firmware file '%s' does not have .hex extension\n", file);
