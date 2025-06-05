@@ -8,18 +8,21 @@
 
 #define PROGRAM_VERSION "0.1"
 
+enum import_format { DMP, RAW };
+
 struct import_ctx {
     int fd;
-    bool raw;
+    enum import_format format;
     int imported_bytes;
 } import_ctx;
+
 
 void ondata(char *buf, int n, void *userdata){
     struct import_ctx * ctx = userdata;
     ctx->imported_bytes += n;
     printf("\r\033[KRead: %d bytes", n);
     for (int i = 0; i < n; i++) {
-        if(ctx->raw) {
+        if(ctx->format == RAW) {
             dprintf(ctx->fd, "%c", buf[i]);
         }
         else {
@@ -31,7 +34,12 @@ void ondata(char *buf, int n, void *userdata){
 void usage_import(const char *progname) {
     fprintf(stderr,
         "Usage:\n"
-        "  %s import [--raw] [--v2] [<tty>] <file.dmp>\n", progname);
+        "  %s import [--format raw|dmp] [--v2] [<tty>] <file.dmp>\n"
+        "\n"
+        "Options:\n"
+        "  --format raw|dmp   Output format (default: dmp)\n"
+        "  --v2               Use protocol version 2\n",
+        progname);
     exit(1);
 }
 
@@ -45,7 +53,7 @@ void usage_fwupdate(const char *progname) {
 void usage(const char *progname) {
     fprintf(stderr,
         "Usage:\n"
-        "  %s import   [--raw] [--v2] [<tty>] <file.dmp>\n"
+        "  %s import   [--format raw|dmp] [--v2] [<tty>] <file>\n"
         "  %s fwupdate [--baud <rate>] [<tty>] <file.hex>\n"
         "  %s --version\n"
         "  %s --help\n",
@@ -138,24 +146,32 @@ int main(int argc, char *argv[]) {
     argv++;
 
     if (strcmp(cmd, "import") == 0) {
-        int raw_mode = 0;
+        enum import_format format = DMP;
         bool version2 = false;
 
         struct option longopts[] = {
-            {"raw",     no_argument,       0, 'r'},
-            {"v2",      required_argument, 0, 'v'},
-            {"help",    no_argument,       0, 'h'},
+            {"format", required_argument, 0, 'f'},
+            {"v2",     no_argument,       0, 'v'},
+            {"help",   no_argument,       0, 'h'},
             {0, 0, 0, 0}
         };
 
         int opt;
-        while ((opt = getopt_long(argc, argv, "rv:h", longopts, NULL)) != -1) {
+        while ((opt = getopt_long(argc, argv, "f:vh", longopts, NULL)) != -1) {
             switch (opt) {
-                case 'r':
-                    raw_mode = 1;
+                case 'f':
+                    if (strcmp(optarg, "raw") == 0) {
+                        format = RAW;
+                    }
+                    else if (strcmp(optarg, "dmp") == 0) {
+                        format = DMP;
+                    } else {
+                        fprintf(stderr, "Unknown format: %s\n", optarg);
+                        usage_import(progname);
+                    }
                     break;
                 case 'v':
-                version2 = true;
+                    version2 = true;
                     break;
                 case 'h':
                 default:
@@ -196,7 +212,7 @@ int main(int argc, char *argv[]) {
 
         struct import_ctx ctx = {
             .fd = out,
-            .raw = raw_mode,
+            .format = format,
             .imported_bytes = 0
         };
 
