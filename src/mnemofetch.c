@@ -37,7 +37,7 @@ void usage_import(const char *progname) {
         "  %s import [--format raw|dmp] [--v2] [<tty>] <file.dmp>\n"
         "\n"
         "Description:\n"
-        "  Retrieve data from the connected device and save it to a file.\n"
+        "  Retrieve survey data from the Nemo and save it to a file.\n"
         "  If no TTY is specified, the tool attempts to autodetect it.\n"
         "\n"
         "Options:\n"
@@ -53,7 +53,7 @@ void usage_update(const char *progname) {
         "  %s update [--baud <rate>] [<tty>] <file.hex>\n"
         "\n"
         "Description:\n"
-        "  Upload a firmware update to the connected device using the specified\n"
+        "  Upload a firmware update to the Nemo using the specified\n"
         "  Intel HEX (.hex) file. If no TTY is specified, the tool attempts to\n"
         "  autodetect it.\n"
         "\n"
@@ -146,6 +146,11 @@ static int flash(mnemo *dev, uint8_t * memory) {
 
 int main(int argc, char *argv[]) {
     char * progname = argv[0];
+    char *autodetected = NULL;
+    const char *tty = NULL;
+    const char *file = NULL;
+
+
     if (argc < 2) {
         usage(progname);
     }
@@ -199,16 +204,14 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        const char *tty = NULL;
-        const char *file = NULL;
-
         if (optind + 1 == argc) {
             file = argv[optind];
-            tty = autodetect();
+            autodetected = autodetect();
             if (!tty) {
                 fprintf(stderr, "No TTY specified and autodetect failed\n");
                 return 1;
             }
+            tty = autodetected;
         } else if (optind + 2 == argc) {
             tty = argv[optind];
             file = argv[optind + 1];
@@ -223,6 +226,7 @@ int main(int argc, char *argv[]) {
         }
 
         mnemo *m = mnemo_open(tty, version2 ? MNEMO_VERSION_2 : MNEMO_VERSION_1, B9600);
+        free(autodetected);
         if(m == NULL) {
             perror(tty);
             return -1;
@@ -265,25 +269,19 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        const char *tty = NULL;
-        const char *file = NULL;
-
         if (optind + 1 == argc) {
             file = argv[optind];
-            tty = autodetect();
+            autodetected = autodetect();
             if (!tty) {
                 fprintf(stderr, "No TTY specified and autodetect failed\n");
                 return 1;
             }
+            tty = autodetected;
         } else if (optind + 2 == argc) {
             tty = argv[optind];
             file = argv[optind + 1];
         } else {
             usage_update(progname);
-        }
-
-        if (!strstr(file, ".hex")) {
-            fprintf(stderr, "Warning: firmware file '%s' does not have .hex extension\n", file);
         }
 
         FILE *fw = fopen(file, "r");
@@ -311,6 +309,8 @@ int main(int argc, char *argv[]) {
         }
         
         mnemo *dev = mnemo_open(tty, MNEMO_VERSION_1, baud_rate); // B460800
+        free(autodetected);
+
         int result = 0;
         if (dev != NULL) {
             result = flash(dev, memory);
