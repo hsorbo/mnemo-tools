@@ -36,27 +36,47 @@ void usage_import(const char *progname) {
         "Usage:\n"
         "  %s import [--format raw|dmp] [--v2] [<tty>] <file.dmp>\n"
         "\n"
+        "Description:\n"
+        "  Retrieve data from the connected device and save it to a file.\n"
+        "  If no TTY is specified, the tool attempts to autodetect it.\n"
+        "\n"
         "Options:\n"
         "  --format raw|dmp   Output format (default: dmp)\n"
-        "  --v2               Mnemo2\n",
+        "  --v2               Use Mnemo protocol version 2\n",
         progname);
     exit(1);
 }
 
-void usage_fwupdate(const char *progname) {
+void usage_update(const char *progname) {
     fprintf(stderr,
         "Usage:\n"
-        "  %s fwupdate [--baud <rate>] [<tty>] <file.hex>\n", progname);
+        "  %s update [--baud <rate>] [<tty>] <file.hex>\n"
+        "\n"
+        "Description:\n"
+        "  Upload a firmware update to the connected device using the specified\n"
+        "  Intel HEX (.hex) file. If no TTY is specified, the tool attempts to\n"
+        "  autodetect it.\n"
+        "\n"
+        "Options:\n"
+        "  --baud <rate>      Serial baud rate (default: 460800)\n",
+        progname);
     exit(1);
 }
 
 void usage(const char *progname) {
     fprintf(stderr,
         "Usage:\n"
-        "  %s import   [--format raw|dmp] [--v2] [<tty>] <file>\n"
-        "  %s fwupdate [--baud <rate>] [<tty>] <file.hex>\n"
+        "  %s import [--format raw|dmp] [--v2] [<tty>] <file.dmp>\n"
+        "      Import surveys from Mnemo and store it to file\n"
+        "\n"
+        "  %s update [--baud <rate>] [<tty>] <file.hex>\n"
+        "      Upload firmware to Mnemo from Intel HEX file\n"
+        "\n"
         "  %s --version\n"
-        "  %s --help\n",
+        "      Show version information\n"
+        "\n"
+        "  %s --help\n"
+        "      Show this help message\n",
         progname, progname, progname, progname);
     exit(1);
 }
@@ -135,7 +155,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (strcmp(argv[1], "--version") == 0) {
-        printf("mnemo version %s\n", PROGRAM_VERSION);
+        printf("mnemo %s\n", PROGRAM_VERSION);
         return 0;
     }
 
@@ -220,7 +240,7 @@ int main(int argc, char *argv[]) {
         printf("\n");
         mnemo_close(m);
         close(out);
-    } else if (strcmp(cmd, "fwupdate") == 0) {
+    } else if (strcmp(cmd, "update") == 0) {
         int baud_rate = 460800;
 
         struct option longopts[] = {
@@ -241,7 +261,7 @@ int main(int argc, char *argv[]) {
                     break;
                 case 'h':
                 default:
-                    usage_fwupdate(progname);
+                    usage_update(progname);
             }
         }
 
@@ -259,7 +279,7 @@ int main(int argc, char *argv[]) {
             tty = argv[optind];
             file = argv[optind + 1];
         } else {
-            usage_fwupdate(progname);
+            usage_update(progname);
         }
 
         if (!strstr(file, ".hex")) {
